@@ -1,6 +1,6 @@
 # Resume: evidence-gated promotion demo
 
-_Where things stood at the end of Phase 2 (2026-11-09)._
+_Where things stood at the end of Phase 3 (2026-11-09)._
 
 To continue with Claude Code, open this repo and say: **"Read RESUME.md and continue."**
 
@@ -16,6 +16,8 @@ Docs only. The demo itself lives in seven GitHub repos under `twallac10` (below)
 | `docs/superpowers/ledger/2026-11-08-phase-0-1-scaffold-and-apps.md` | Progress ledger: every task's result and every decision ("Ruling") made along the way |
 | `docs/superpowers/plans/2026-11-09-phase-2-notifications-and-promote.md` | Implementation plan for Phase 2 |
 | `docs/superpowers/ledger/2026-11-09-phase-2-notifications-and-promote.md` | Phase 2 ledger: results, Rulings, final review, deferred minors |
+| `docs/superpowers/plans/2026-11-09-phase-3-guardrails-and-environments.md` | Implementation plan for Phase 3 |
+| `docs/superpowers/ledger/2026-11-09-phase-3-guardrails-and-environments.md` | Phase 3 ledger: results, Rulings, final review, deferred minors |
 | `RESUME.md` | This file |
 
 ## Decisions already made (don't re-ask)
@@ -49,12 +51,14 @@ Docs only. The demo itself lives in seven GitHub repos under `twallac10` (below)
 - Fresh `task up`: `success` Deployments for all 12 app/tier pairs and one promotion PR (kyverno-policies dev → stg). A dev test failure: `failure` Deployment, no PR. Stale and forged events: no Deployment. Revert path: revert PR touching only stg `release.yaml`.
 - Final review: 4 Important fixed (v0.4.2), 6 Minor deferred (see the Phase 2 ledger). Results in `promo-fleet/NOTES.md`.
 
-**Open PRs (GitHub; Claude can't close or merge them in auto mode):**
-- Close unmerged (test artifacts / superseded): promo-kyverno #2, #3, #4; promo-kyverno-policies #4.
-- Merge when ready: promo-kyverno #5 (3.9.2-4: test pod manages its own policy; RBAC limited to it). Then watch the dev run and the stg promotion PR it opens.
-- Leave open for Phase 3: promo-kyverno-policies #3 (stg promotion).
+**Phase 3 finished on 2026-11-09** (guardrails, Environments, auto-merge), verified live:
+- Every PR to an app repo's `main` needs the `promotion-gate` check (`gate.yaml`, `pull_request_target`): `guardrails` (promo-workflows **v0.5.3** `actions/guardrails`) classifies the PR by branch (`promote/<t>`, `revert/<t>`, other) and checks files, release, Deployment evidence, chart sources and secrets; `promotion-gate` then waits in that tier's environment. `task gh:envs` set up environments (prd: you approve), branch protection and auto-merge.
+- Live: stg PRs merged themselves; a prd PR waited for your approval, then merged itself and deployed. A sneaky PR (tier.yaml riding along) and a hand-made prd PR failed. A fake same-named check did not unblock a PR.
+- Final review: 1 Critical + 1 Important fixed (v0.5.3), 1 Important disproved live, 3 Minor deferred (see the Phase 3 ledger).
 
-**Next: Phase 3** (guardrails + Environments + branch protection + auto-merge). Carry in: gate revert PRs too (a forged failure event can open one; see NOTES "Trust boundary"), and the deferred minors.
+**Open in GitHub:** promo-kyverno-policies #5 (prd promotion, 3.9.2-2) waits for your approval. Old gate runs still waiting for prd approval (from before fixes) can be rejected.
+
+**Next: Phase 4** (demo scenarios: `demo:good`, `demo:ready-but-broken`, `demo:stg-rollback`, `demo:sneaky`, each from a fresh `task up`). Carry in the deferred minors from both ledgers.
 
 ## Repos
 
@@ -63,7 +67,7 @@ All public, all CI green, all pushed, no local-only work.
 | Repo | Role |
 |---|---|
 | `promo-fleet` | `tiers.yaml`, `apps.yaml`, kind configs, cluster sync paths, canary, guardrails, `Taskfile.yml`, `NOTES.md` |
-| `promo-workflows` | Reusable workflows. `mirror.yaml` and `promote.yaml` (+ `actions/promote/`) at tag **v0.4.2**; tests in `tests/run.sh` |
+| `promo-workflows` | Reusable workflows `mirror.yaml`, `promote.yaml` and composite actions `actions/promote`, `actions/guardrails`, at tag **v0.5.3**; tests in `tests/run.sh` (needs gitleaks) |
 | `promo-app-template` | Template the app repos were made from |
 | `promo-kyverno`, `promo-kyverno-policies`, `promo-prometheus`, `promo-otel-collector` | App repos. Template-owned files kept in sync by `task repos:sync` (fleet) |
 
@@ -87,6 +91,7 @@ Versions are what was used. Flux must be **2.10.0** exactly: the tests cache CRD
 | kubeconform | 0.8.0 |
 | actionlint | 1.7 |
 | kyverno CLI | 1.19.2 |
+| gitleaks | 8.30.1 (for promo-workflows tests) |
 | perl | any |
 
 `gh auth login` as `twallac10`. GHCR charts are public, so no registry login is needed.
@@ -138,5 +143,8 @@ task status               # full Flux messages + restart counts per tier
 - **Never move a chart tag.** The mirror workflow refuses to re-push an existing version unless the first tier already pins that digest. Bump `chart/Chart.yaml` `version` (`<upstream>-<n>`) for any chart change.
 - **On a Mac, sleep pauses everything.** A watch loop stalls while macOS sleeps. Wrap long runs in `caffeinate -i`.
 - **`flux reconcile ks --with-source` across three clusters** was slow to return even after dev was done. Check HelmRelease status directly instead.
-- **Auto mode blocks GitHub PR merges and closes.** Claude will ask you to do them.
+- **Auto mode sometimes blocks GitHub PR merges, closes and admin settings.** Claude asks you to do them; `task gh:envs` is yours to run (review `-- --dry-run` first).
+- **A Docker restart wipes the clusters** (etcd on tmpfs): every API call is refused afterwards. `task down && task up` rebuilds in ~8 min and every app re-reports.
+- **Direct pushes to app `main`** (template syncs) bypass the required check as admin; everything else goes through PRs.
+- **A GitHub outage** shows up as runs failing at startup with no jobs; only the run page says why.
 - **Every fresh `task up` re-sends every app's test result from every tier.** That records Deployments and may open or close promotion PRs; it's expected.
