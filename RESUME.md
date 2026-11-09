@@ -1,6 +1,6 @@
 # Resume: evidence-gated promotion demo
 
-_Where things stood on 2026-11-09, when work moved to a bigger machine._
+_Where things stood at the end of Phase 2 (2026-11-09)._
 
 To continue with Claude Code, open this repo and say: **"Read RESUME.md and continue."**
 
@@ -14,6 +14,8 @@ Docs only. The demo itself lives in seven GitHub repos under `twallac10` (below)
 | `LESSONS.md` | Lessons from the previous attempt. Amends the spec (see "Decisions") |
 | `docs/superpowers/plans/2026-11-08-phase-0-1-scaffold-and-apps.md` | Implementation plan for Phases 0–1 |
 | `docs/superpowers/ledger/2026-11-08-phase-0-1-scaffold-and-apps.md` | Progress ledger: every task's result and every decision ("Ruling") made along the way |
+| `docs/superpowers/plans/2026-11-09-phase-2-notifications-and-promote.md` | Implementation plan for Phase 2 |
+| `docs/superpowers/ledger/2026-11-09-phase-2-notifications-and-promote.md` | Phase 2 ledger: results, Rulings, final review, deferred minors |
 | `RESUME.md` | This file |
 
 ## Decisions already made (don't re-ask)
@@ -40,9 +42,19 @@ Docs only. The demo itself lives in seven GitHub repos under `twallac10` (below)
 **Phase 1 finished on 2026-11-09** on the new Mac (arm64, Docker 8 CPU / 15.6 GiB):
 1. One `task down && task up` brought all three tiers to Ready with no manual steps in ~8.5 min (~6.8 GiB total).
 2. Final review done: no Critical; two Important fixed (see the ledger), six Minor recorded there, not fixed.
-3. Open: kyverno-policies PR #2 (chart 3.9.2-2, dev only) carries the review fix for its Ready test, and is waiting to be merged.
+3. kyverno-policies 3.9.2-2 (Ready-test fix) is in dev.
 
-**Then Phase 2** (notifications + promote workflow), per the spec.
+**Phase 2 finished on 2026-11-09** (notifications + promote workflow), verified live:
+- Each app repo's `tiers/<tier>/notify.yaml` sends Flux test results to the repo (`repository_dispatch`); `promo-workflows` **v0.4.2** `promote.yaml` validates the event, checks it against `main` (digest + release id), records a Deployment and opens the promotion PR (or a revert PR after a failed upgrade in a rollback tier).
+- Fresh `task up`: `success` Deployments for all 12 app/tier pairs and one promotion PR (kyverno-policies dev → stg). A dev test failure: `failure` Deployment, no PR. Stale and forged events: no Deployment. Revert path: revert PR touching only stg `release.yaml`.
+- Final review: 4 Important fixed (v0.4.2), 6 Minor deferred (see the Phase 2 ledger). Results in `promo-fleet/NOTES.md`.
+
+**Open PRs (GitHub; Claude can't close or merge them in auto mode):**
+- Close unmerged (test artifacts / superseded): promo-kyverno #2, #3, #4; promo-kyverno-policies #4.
+- Merge when ready: promo-kyverno #5 (3.9.2-4: test pod manages its own policy; RBAC limited to it). Then watch the dev run and the stg promotion PR it opens.
+- Leave open for Phase 3: promo-kyverno-policies #3 (stg promotion).
+
+**Next: Phase 3** (guardrails + Environments + branch protection + auto-merge). Carry in: gate revert PRs too (a forged failure event can open one; see NOTES "Trust boundary"), and the deferred minors.
 
 ## Repos
 
@@ -51,9 +63,9 @@ All public, all CI green, all pushed, no local-only work.
 | Repo | Role |
 |---|---|
 | `promo-fleet` | `tiers.yaml`, `apps.yaml`, kind configs, cluster sync paths, canary, guardrails, `Taskfile.yml`, `NOTES.md` |
-| `promo-workflows` | Reusable workflows. `mirror.yaml` at tag **v0.3.1** |
+| `promo-workflows` | Reusable workflows. `mirror.yaml` and `promote.yaml` (+ `actions/promote/`) at tag **v0.4.2**; tests in `tests/run.sh` |
 | `promo-app-template` | Template the app repos were made from |
-| `promo-kyverno`, `promo-kyverno-policies`, `promo-prometheus`, `promo-otel-collector` | App repos. All tiers pinned to the same GHCR digest |
+| `promo-kyverno`, `promo-kyverno-policies`, `promo-prometheus`, `promo-otel-collector` | App repos. Template-owned files kept in sync by `task repos:sync` (fleet) |
 
 ## Set up the new machine
 
@@ -118,10 +130,13 @@ task status               # full Flux messages + restart counts per tier
 
 - The App's ID and private key are already stored as Actions secrets (`PROMO_APP_ID`, `PROMO_APP_PRIVATE_KEY`) in the four app repos. Nothing to move.
 - The `.pem` on the old Mac (`~/Downloads/promo-bot-twallac10.2026-11-08.private-key.pem`) is only needed to set those secrets again. Store it somewhere safe or delete it. You can generate a new key in the App settings at any time.
-- Phase 2 will add a per-cluster dispatch token (Flux → `repository_dispatch`). It doesn't exist yet.
+- **Dispatch tokens** (Flux → `repository_dispatch`): one fine-grained PAT per tier, Contents: write on the four app repos, 90-day expiry (from 2026-11-09). Kept in `~/.config/promo/dispatch-<tier>.token` (mode 600); `task up` loads them and refuses a tier without one. Renew before they expire.
+- The App needs Contents, Pull requests, Deployments and Issues: write.
 
 ## Gotchas found so far
 
 - **Never move a chart tag.** The mirror workflow refuses to re-push an existing version unless the first tier already pins that digest. Bump `chart/Chart.yaml` `version` (`<upstream>-<n>`) for any chart change.
 - **On a Mac, sleep pauses everything.** A watch loop stalls while macOS sleeps. Wrap long runs in `caffeinate -i`.
 - **`flux reconcile ks --with-source` across three clusters** was slow to return even after dev was done. Check HelmRelease status directly instead.
+- **Auto mode blocks GitHub PR merges and closes.** Claude will ask you to do them.
+- **Every fresh `task up` re-sends every app's test result from every tier.** That records Deployments and may open or close promotion PRs; it's expected.
