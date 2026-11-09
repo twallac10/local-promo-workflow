@@ -37,9 +37,10 @@ Docs only. The demo itself lives in seven GitHub repos under `twallac10` (below)
 - A dev-only `tier.yaml` change reached only dev.
 - Results are in `promo-fleet/NOTES.md`.
 
-**Left in Phase 1:**
-1. Task 8 Step 6: `task down && task up` from scratch on the new machine. All three tiers must converge with no manual steps. Record the new machine's footprint in `promo-fleet/NOTES.md`.
-2. Final whole-branch review of Phases 0–1 (see the ledger's Rulings), then fix anything Critical or Important.
+**Phase 1 finished on 2026-11-09** on the new Mac (arm64, Docker 8 CPU / 15.6 GiB):
+1. One `task down && task up` brought all three tiers to Ready with no manual steps in ~8.5 min (~6.8 GiB total).
+2. Final review done: no Critical; two Important fixed (see the ledger), six Minor recorded there, not fixed.
+3. Open: kyverno-policies PR #2 (chart 3.9.2-2, dev only) carries the review fix for its Ready test, and is waiting to be merged.
 
 **Then Phase 2** (notifications + promote workflow), per the spec.
 
@@ -50,7 +51,7 @@ All public, all CI green, all pushed, no local-only work.
 | Repo | Role |
 |---|---|
 | `promo-fleet` | `tiers.yaml`, `apps.yaml`, kind configs, cluster sync paths, canary, guardrails, `Taskfile.yml`, `NOTES.md` |
-| `promo-workflows` | Reusable workflows. `mirror.yaml` at tag **v0.3.0** |
+| `promo-workflows` | Reusable workflows. `mirror.yaml` at tag **v0.3.1** |
 | `promo-app-template` | Template the app repos were made from |
 | `promo-kyverno`, `promo-kyverno-policies`, `promo-prometheus`, `promo-otel-collector` | App repos. All tiers pinned to the same GHCR digest |
 
