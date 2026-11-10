@@ -58,6 +58,8 @@ Docs only. The demo itself lives in seven GitHub repos under `twallac10` (below)
 
 **Open in GitHub:** promo-kyverno-policies #5 (prd promotion, 3.9.2-2) waits for your approval. Old gate runs still waiting for prd approval (from before fixes) can be rejected.
 
+**In progress (stopped 2026-11-10): signed test evidence with Testkube.** Design `docs/superpowers/specs/2026-11-09-test-evidence-design.md`, plan `docs/superpowers/plans/2026-11-10-signed-test-evidence.md`, ledger `docs/superpowers/ledger/2026-11-10-signed-test-evidence.md`. Working in dev and stg (promo-workflows v0.6.0: Testkube behaviour tests -> JUnit in GHCR + signed test-result attestation -> gate verifies it). **First fix the prd deadlock** (see the ledger's last lines): prd Testkube needs kyverno-policies' provisioner exemption, but kyverno-policies waits on Testkube. Then finish Task 7 and run the final review.
+
 **Next: Phase 4** (demo scenarios: `demo:good`, `demo:ready-but-broken`, `demo:stg-rollback`, `demo:sneaky`, each from a fresh `task up`). Carry in the deferred minors from both ledgers.
 
 ## Repos
