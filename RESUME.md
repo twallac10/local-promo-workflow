@@ -1,6 +1,6 @@
 # Resume: evidence-gated promotion demo
 
-_Where things stood at the end of Phase 3 (2026-11-09)._
+_Where things stood after signed test evidence (2026-11-13)._
 
 To continue with Claude Code, open this repo and say: **"Read RESUME.md and continue."**
 
@@ -18,6 +18,9 @@ Docs only. The demo itself lives in seven GitHub repos under `twallac10` (below)
 | `docs/superpowers/ledger/2026-11-09-phase-2-notifications-and-promote.md` | Phase 2 ledger: results, Rulings, final review, deferred minors |
 | `docs/superpowers/plans/2026-11-09-phase-3-guardrails-and-environments.md` | Implementation plan for Phase 3 |
 | `docs/superpowers/ledger/2026-11-09-phase-3-guardrails-and-environments.md` | Phase 3 ledger: results, Rulings, final review, deferred minors |
+| `docs/superpowers/specs/2026-11-09-test-evidence-design.md` | Design: signed test evidence with Testkube |
+| `docs/superpowers/plans/2026-11-10-signed-test-evidence.md` | Implementation plan for signed test evidence |
+| `docs/superpowers/ledger/2026-11-10-signed-test-evidence.md` | Its ledger: results, Rulings, final review, deferred minors |
 | `RESUME.md` | This file |
 
 ## Decisions already made (don't re-ask)
@@ -56,9 +59,9 @@ Docs only. The demo itself lives in seven GitHub repos under `twallac10` (below)
 - Live: stg PRs merged themselves; a prd PR waited for your approval, then merged itself and deployed. A sneaky PR (tier.yaml riding along) and a hand-made prd PR failed. A fake same-named check did not unblock a PR.
 - Final review: 1 Critical + 1 Important fixed (v0.5.3), 1 Important disproved live, 3 Minor deferred (see the Phase 3 ledger).
 
-**Open in GitHub:** promo-kyverno-policies #5 (prd promotion, 3.9.2-2) waits for your approval. Old gate runs still waiting for prd approval (from before fixes) can be rejected.
+**Open in GitHub:** prd promotions promo-kyverno #10 (3.9.2-5) and promo-prometheus #10 (29.45.1-3) wait for your approval. Old gate runs still waiting for prd approval can be rejected.
 
-**In progress (stopped 2026-11-10): signed test evidence with Testkube.** Design `docs/superpowers/specs/2026-11-09-test-evidence-design.md`, plan `docs/superpowers/plans/2026-11-10-signed-test-evidence.md`, ledger `docs/superpowers/ledger/2026-11-10-signed-test-evidence.md`. Working in dev and stg (promo-workflows v0.6.0: Testkube behaviour tests -> JUnit in GHCR + signed test-result attestation -> gate verifies it). **First fix the prd deadlock** (see the ledger's last lines): prd Testkube needs kyverno-policies' provisioner exemption, but kyverno-policies waits on Testkube. Then finish Task 7 and run the final review.
+**Signed test evidence with Testkube finished on 2026-11-13** (design `docs/superpowers/specs/2026-11-09-test-evidence-design.md`, plan `docs/superpowers/plans/2026-11-10-signed-test-evidence.md`, ledger `docs/superpowers/ledger/2026-11-10-signed-test-evidence.md`). Behaviour tests run in Testkube for every release in every tier; promo-workflows **v0.6.0** stores the JUnit in GHCR and signs a test-result attestation; the gate merges a promotion only on a verified PASSED attestation for the source tier and release. Verified live: ready-but-broken (FAILED, no stg PR), retest (newest wins), forgery (a branch-signed PASSED is ignored), and a fresh prd. A fresh `task up` was broken by a dry-run ordering bug (fixed: Kustomization `testkube-report`). Results in `promo-fleet/NOTES.md` ("Test evidence").
 
 **Next: Phase 4** (demo scenarios: `demo:good`, `demo:ready-but-broken`, `demo:stg-rollback`, `demo:sneaky`, each from a fresh `task up`). Carry in the deferred minors from both ledgers.
 
@@ -69,7 +72,7 @@ All public, all CI green, all pushed, no local-only work.
 | Repo | Role |
 |---|---|
 | `promo-fleet` | `tiers.yaml`, `apps.yaml`, kind configs, cluster sync paths, canary, guardrails, `Taskfile.yml`, `NOTES.md` |
-| `promo-workflows` | Reusable workflows `mirror.yaml`, `promote.yaml` and composite actions `actions/promote`, `actions/guardrails`, at tag **v0.5.3**; tests in `tests/run.sh` (needs gitleaks) |
+| `promo-workflows` | Reusable workflows `mirror.yaml`, `promote.yaml` and composite actions `actions/promote`, `actions/guardrails`, at tag **v0.6.0**; tests in `tests/run.sh` (needs gitleaks) |
 | `promo-app-template` | Template the app repos were made from |
 | `promo-kyverno`, `promo-kyverno-policies`, `promo-prometheus`, `promo-otel-collector` | App repos. Template-owned files kept in sync by `task repos:sync` (fleet) |
 
